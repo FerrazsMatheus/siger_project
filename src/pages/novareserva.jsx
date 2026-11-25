@@ -1,0 +1,102 @@
+function NovaReserva({
+    locais,
+    hojeIso,
+    horarioMinimo,
+    localSelecionado,
+    setLocalSelecionado,
+    dataReserva,
+    setDataReserva,
+    horarioInicio,
+    setHorarioInicio,
+    horarioFim,
+    setHorarioFim,
+    proposito,
+    setProposito,
+    enviando,
+    erroEnvio,
+    sucessoEnvio,
+    handleEnviarSolicitacao,
+    reservasPendentes,
+    reservasAprovadas,
+    reservasCanceladas,
+    solicitacoesArquivadas,
+}) {
+    return (
+        <>
+        <div className="card shell-card new-request-card">
+            <div className="tab-content">
+                <div className="section-header request-header">
+                    <div>
+                        <span className="eyebrow">Reservas</span>
+                        <h3 className="h5 mb-0">Solicitar espaço</h3>
+                        <p className="request-subtitle">Preencha os dados para enviar uma nova solicitação.</p>
+                    </div>
+                </div>
+
+                {sucessoEnvio && <div className="alert alert-success py-2" role="alert">{sucessoEnvio}</div>}
+                {erroEnvio && <div className="alert alert-danger py-2" role="alert" style={{ whiteSpace: 'pre-line' }}>{erroEnvio}</div>}
+
+                <div className="info-banner request-info-banner mb-3">
+                    <strong>Agenda rápida:</strong> escolha o local, a data e o horário para reservar em poucos segundos.
+                </div>
+
+                <form className="request-form" onSubmit={handleEnviarSolicitacao}>
+                    <div className="row g-3">
+                        <div className="col-md-6 request-field">
+                            <label htmlFor="local" className="form-label">Local</label>
+                            <select id="local" className="form-select" value={localSelecionado} onChange={(event) => setLocalSelecionado(event.target.value)}>
+                                <option value="">Selecione um local</option>
+                                {locais.map((local) => <option key={local.id} value={local.id}>{local.name} - {local.type}</option>)}
+                            </select>
+                        </div>
+                        <div className="col-md-6 request-field">
+                            <label htmlFor="data" className="form-label">Data da Reserva</label>
+                            <input id="data" type="date" className="form-control" min={hojeIso} value={dataReserva} onChange={(event) => setDataReserva(event.target.value)} />
+                        </div>
+                        <div className="col-md-6 request-field">
+                            <label htmlFor="horario-inicio" className="form-label">Horário de Início</label>
+                            <input id="horario-inicio" type="time" className="form-control" min={horarioMinimo || undefined} value={horarioInicio} onChange={(event) => setHorarioInicio(event.target.value)} />
+                        </div>
+                        <div className="col-md-6 request-field">
+                            <label htmlFor="horario-fim" className="form-label">Horário de Término</label>
+                            <input id="horario-fim" type="time" className="form-control" value={horarioFim} onChange={(event) => setHorarioFim(event.target.value)} />
+                        </div>
+                        <div className="col-12 request-field">
+                            <label htmlFor="proposito" className="form-label">Propósito / Observação</label>
+                            <textarea id="proposito" className="form-control" rows="3" value={proposito} onChange={(event) => setProposito(event.target.value)} placeholder="Descreva o motivo da reserva (ex: aula prática, reunião de projeto, etc.)" />
+                        </div>
+                        <div className="col-12 request-actions">
+                            <button type="submit" className="btn btn-primary request-submit" disabled={enviando}>
+                                {enviando ? <><span className="spinner-border spinner-border-sm me-2" role="status" />Enviando...</> : 'Enviar Solicitação'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <section className="request-report" aria-labelledby="request-report-title">
+            <h3 id="request-report-title" className="h5 mb-3">Resumo das solicitações</h3>
+            <div className="stat-grid mb-0">
+                <div className="stat-card">
+                    <span className="stat-label">Pendentes</span>
+                    <strong className="stat-value warning">{reservasPendentes}</strong>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-label">Aprovadas</span>
+                    <strong className="stat-value success">{reservasAprovadas}</strong>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-label">Canceladas</span>
+                    <strong className="stat-value muted">{reservasCanceladas}</strong>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-label">Arquivadas</span>
+                    <strong className="stat-value">{solicitacoesArquivadas.length}</strong>
+                </div>
+            </div>
+        </section>
+        </>
+    )
+}
+
+export default NovaReserva
