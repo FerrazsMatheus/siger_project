@@ -9,7 +9,6 @@ import {
   atualizarStatusSolicitacao,
   reativarSolicitacao,
   excluirSolicitacao,
-  verificarConflitoHorario,
   STATUS_SOLICITACAO,
   STATUS_SOLICITACAO_LABELS,
   STATUS_SOLICITACAO_CORES,
@@ -192,26 +191,6 @@ const Dashboard = memo(function Dashboard() {
 
     setEnviando(true)
     try {
-      const { temConflito, conflitos } = await verificarConflitoHorario({
-        localId: localSelecionado,
-        dataReserva,
-        horarioInicio,
-        horarioFim,
-      })
-
-      if (temConflito) {
-        const detalhes = conflitos
-          .map(
-            (c) =>
-              `• ${c.horarioInicio} às ${c.horarioFim} (${STATUS_SOLICITACAO_LABELS[c.status] || c.status})`,
-          )
-          .join('\n')
-        setErroEnvio(
-          `Já existe uma reserva para este local no dia e horário solicitado:\n${detalhes}\n\nPor favor, escolha outro horário.`,
-        )
-        return
-      }
-
       await criarSolicitacao({
         localId: localSelecionado,
         localNome: localEncontrado?.name || '',
@@ -234,7 +213,9 @@ const Dashboard = memo(function Dashboard() {
       await carregarMinhasSolicitacoes()
     } catch (error) {
       console.error('Erro ao enviar solicitação:', error)
-      setErroEnvio('Não foi possível enviar a solicitação. Tente novamente.')
+      setErroEnvio(error.code === 'permission-denied'
+        ? 'O Firestore negou o envio. Confira se as regras publicadas permitem criar solicitações para usuários autenticados.'
+        : 'Não foi possível enviar a solicitação. Tente novamente.')
     } finally {
       setEnviando(false)
     }
@@ -296,7 +277,9 @@ const Dashboard = memo(function Dashboard() {
       await carregarMinhasSolicitacoes()
     } catch (error) {
       console.error('Erro ao reativar solicitação:', error)
-      setErroReativar('Não foi possível reativar a solicitação. Tente novamente.')
+      setErroReativar(error.code === 'permission-denied'
+        ? 'O Firestore bloqueou o reenvio. Publique as regras atualizadas do arquivo firestore.rules e tente novamente.'
+        : 'Não foi possível reativar a solicitação. Tente novamente.')
     } finally {
       setProcessandoReativar(false)
     }

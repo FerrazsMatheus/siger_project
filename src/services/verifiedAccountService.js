@@ -1,15 +1,14 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
   setDoc,
   serverTimestamp,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { emailInstitucionalValido } from './authService'
 
 export const COLECAO_VERIFICADAS = 'verifiedAccounts'
 export const COLECAO_TURMAS = 'turmas'
@@ -240,10 +239,6 @@ export async function validarCadastroVerificado({ nome, email, matricula }) {
     return { ok: false, erro: 'Preencha nome, e-mail e matrícula para continuar.' }
   }
 
-  if (!emailInstitucionalValido(emailNormalizado)) {
-    return { ok: false, erro: 'O cadastro é permitido somente com e-mail institucional.' }
-  }
-
   const conta = await buscarContaVerificadaPorEmailOuMatricula(emailNormalizado, matriculaNormalizada)
 
   if (!conta) {
@@ -368,6 +363,14 @@ export async function atualizarContaVerificada(contaId, dados = {}) {
   payload.atualizadoEm = serverTimestamp()
 
   const refConta = doc(db, COLECAO_VERIFICADAS, contaId)
+  const contaSnapshot = await getDoc(refConta)
+  if (!contaSnapshot.exists()) throw new Error('A conta autorizada não foi encontrada.')
+
+  const contaAtual = contaSnapshot.data()
+  if (contaAtual.status !== STATUS_CONTA_VERIFICADA.NAO_CADASTRADA) {
+    throw new Error('Contas verificadas não podem ser editadas depois do cadastro do usuário.')
+  }
+
   await updateDoc(refConta, payload)
   return true
 }
@@ -377,7 +380,25 @@ export async function removerContaVerificada(contaId) {
     throw new Error('Informe a conta que será removida.')
   }
 
-  await deleteDoc(doc(db, COLECAO_VERIFICADAS, contaId))
+  const refConta = doc(db, COLECAO_VERIFICADAS, contaId)
+  const contaSnapshot = await getDoc(refConta)
+  if (!contaSnapshot.exists()) return true
+
+  const conta = contaSnapshot.data()
+  const batch = writeBatch(db)
+  if (conta.authUid) {
+    const refUsuario = doc(db, 'users', conta.authUid)
+    const usuarioSnapshot = await getDoc(refUsuario)
+    if (usuarioSnapshot.exists()) {
+      const usuario = usuarioSnapshot.data()
+      if (usuario.verifiedAccountId !== contaId || usuario.role !== conta.tipo) {
+        throw new Error('O perfil vinculado não corresponde a esta conta verificada.')
+      }
+      batch.delete(refUsuario)
+    }
+  }
+  batch.delete(refConta)
+  await batch.commit()
   return true
 }
 
@@ -395,7 +416,7 @@ export async function contarContasVerificadas() {
 export function criarModeloCsv(tipo) {
   if (tipo === 'aluno') {
     return [
-      ['Nome completo', 'E-mail institucional', 'Matrícula', 'Turma'],
+      ['Nome completo', 'E-mail', 'Matrícula', 'Turma'],
       ['João Silva', 'joao@email.com', '12345', '1º Ano A'],
       ['Maria Souza', 'maria@email.com', '12346', '1º Ano B'],
       ['Pedro Santos', 'pedro@email.com', '12347', '2º Ano A'],
@@ -405,7 +426,7 @@ export function criarModeloCsv(tipo) {
   }
 
   return [
-    ['Nome completo', 'E-mail institucional', 'Matrícula'],
+    ['Nome completo', 'E-mail', 'Matrícula'],
     ['Carlos Lima', 'carlos@email.com', '54321'],
     ['Fernanda Costa', 'fernanda@email.com', '54322'],
     ['Ricardo Alves', 'ricardo@email.com', '54323'],
@@ -465,8 +486,8 @@ export async function previsualizarImportacaoCsv({ tipo, texto }) {
     const turma = tipo === 'aluno' ? normalizarTexto(registro.turma) : ''
 
     if (!nome) erros.push('Nome completo obrigatório.')
-    if (!email) erros.push('E-mail institucional obrigatório.')
-    else if (!emailInstitucionalValido(email)) erros.push('E-mail inválido ou fora do domínio institucional.')
+    if (!email) erros.push('E-mail obrigatório.')
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) erros.push('E-mail inválido.')
     if (!matricula) erros.push('Matrícula obrigatória.')
     if (tipo === 'aluno' && !turma) erros.push('Turma obrigatória para alunos.')
 

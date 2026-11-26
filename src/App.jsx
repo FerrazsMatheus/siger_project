@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import EmailMigrationGate from './components/EmailMigrationGate'
 
 const Login = lazy(() => import('./pages/Login'))
 const Cadastro = lazy(() => import('./pages/Cadastro'))
@@ -18,6 +19,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <EmailMigrationGate>
         <Suspense
           fallback={
             <div className="d-flex justify-content-center align-items-center vh-100">
@@ -90,6 +92,7 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
+        </EmailMigrationGate>
       </AuthProvider>
     </BrowserRouter>
   )

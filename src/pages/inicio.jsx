@@ -26,16 +26,6 @@ function Inicio({
               <span className="user-badge">{perfilLabel}</span>
             </div>
           </div>
-          {tipoUsuario === 'professor' && (
-            <div className="alert alert-info py-2 small mb-0" role="alert">
-              Você está acessando como professor. Seu perfil é de usuário comum, sem privilégios de administrador.
-            </div>
-          )}
-          {tipoUsuario === 'aluno' && (
-            <div className="alert alert-light border py-2 small mb-0" role="alert">
-              Você está acessando como aluno.
-            </div>
-          )}
         </div>
       </div>
 

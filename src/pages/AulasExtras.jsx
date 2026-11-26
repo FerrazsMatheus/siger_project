@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/useAuth'
 import AdminNavbar from '../components/admin/AdminNavbar'
 import { listarTurmas } from '../services/verifiedAccountService'
 import { listarLocais } from '../services/locationService'
+import { buscarDocumentoUsuario } from '../services/userService'
+import { enviarEmailDecisao } from '../services/emailService'
 import {
   criarSolicitacaoAulaExtra,
   listarAulasExtras,
@@ -453,9 +455,37 @@ export default function AulasExtras({ modo = 'solicitar' }) {
         aprovar: modalDecisao.aprovar,
         justificativa,
       })
+      let falhaEmail = false
+      try {
+        const solicitacao = modalDecisao.solicitacao
+        const perfilSolicitante = solicitacao.solicitanteUid
+          ? await buscarDocumentoUsuario(solicitacao.solicitanteUid)
+          : null
+        await enviarEmailDecisao({
+          destinatario: perfilSolicitante?.email,
+          nome: solicitacao.solicitanteNome || perfilSolicitante?.name,
+          tipo: 'aula extra',
+          status: modalDecisao.aprovar ? STATUS_AULA_EXTRA.APROVADA : STATUS_AULA_EXTRA.RECUSADA,
+          detalhes: {
+            assunto: solicitacao.titulo,
+            localNome: solicitacao.localNome,
+            data: solicitacao.data,
+            horario: solicitacao.horario,
+            descricao: solicitacao.descricao,
+            materia: solicitacao.materia,
+            turmas: (solicitacao.turmas || []).map((turma) => turma.nome).join(', '),
+            professorNome: solicitacao.professorNome,
+            observacao: modalDecisao.aprovar ? '' : justificativa.trim(),
+          },
+        })
+      } catch (emailError) {
+        falhaEmail = true
+        console.error('A solicitação foi processada, mas o e-mail não foi enviado:', emailError)
+      }
       setModalDecisao(null)
       setJustificativa('')
       setSucesso(modalDecisao.aprovar ? 'Aula extra aprovada e publicada para as turmas selecionadas.' : 'Solicitação recusada.')
+      if (falhaEmail) setErro('A decisão foi salva, mas não foi possível enviar o e-mail. Verifique as configurações do EmailJS.')
       await carregarSolicitacoes()
     } catch (error) {
       console.error('Erro ao processar solicitação de aula extra:', error)

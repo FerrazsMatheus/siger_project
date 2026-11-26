@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, serverTimestamp, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, setDoc, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { db } from './firebase'
 
 const COLECAO_USERS = 'users'
@@ -37,6 +37,15 @@ export async function buscarDocumentoUsuario(uid) {
   const snapshot = await getDoc(refUsuario)
 
   return snapshot.exists() ? snapshot.data() : null
+}
+
+export async function concluirMigracaoEmailUsuario({ uid, novoEmail }) {
+  if (!uid || !novoEmail) throw new Error('Dados incompletos para atualizar o e-mail do perfil.')
+  await updateDoc(doc(db, COLECAO_USERS, uid), {
+    email: String(novoEmail).trim().toLowerCase(),
+    emailPendente: '',
+    updatedAt: serverTimestamp(),
+  })
 }
 
 export async function listarUsuariosPorPerfil(role) {

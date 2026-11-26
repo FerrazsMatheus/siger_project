@@ -94,7 +94,17 @@ service cloud.firestore {
         perfilVerificadoNoCadastro();
 
       // O vínculo de turma e o papel só podem ser alterados pela administração.
-      allow update: if ehAdmin();
+      // O próprio usuário pode concluir uma troca de e-mail autenticada pelo Firebase Auth.
+      allow update: if ehAdmin() || (
+        ehDonoDoDocumento(uid) &&
+        resource.data.emailPendente is string &&
+        resource.data.emailPendente != '' &&
+        request.resource.data.email == resource.data.emailPendente &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.emailPendente == '' &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['email', 'emailPendente', 'updatedAt'])
+      );
 
       // Exclusão: somente admins (ninguém pode excluir seu próprio usuário por aqui)
       allow delete: if ehAdmin();
@@ -334,7 +344,7 @@ service cloud.firestore {
     match /verifiedAccounts/{accountId} {
       allow read: if true;
       allow create, delete: if ehAdmin();
-      allow update: if ehAdmin() || (
+      allow update: if (ehAdmin() && resource.data.status == 'nao_cadastrada') || (
         estaAutenticado() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.verifiedAccountId == accountId &&
@@ -398,13 +408,23 @@ service cloud.firestore {
     match /solicitacoes/{solicitacaoId} {
       allow read: if estaAutenticado() &&
         (ehAdmin() || resource.data.usuarioId == request.auth.uid);
-      allow create: if estaAutenticado();
+      allow create: if estaAutenticado() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
       allow update: if ehAdmin() ||
         (estaAutenticado() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          request.resource.data.usuarioId == resource.data.usuarioId &&
          (
            (request.resource.data.status == 'cancelada' &&
             resource.data.status == 'pendente') ||
+           (
+             resource.data.status in ['rejeitada', 'cancelada'] &&
+             request.resource.data.status == 'pendente' &&
+             request.resource.data.observacaoAdmin == '' &&
+             request.resource.data.justificativaCancelamento == '' &&
+             request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status', 'observacaoAdmin', 'justificativaCancelamento', 'updatedAt'])
+           ) ||
            (
              request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(['status', 'statusAnterior', 'observacaoAdmin', 'updatedAt']) &&
@@ -420,6 +440,7 @@ service cloud.firestore {
          ));
       allow delete: if ehAdmin() ||
         (estaAutenticado() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          resource.data.usuarioId == request.auth.uid &&
          (resource.data.status == 'cancelada' || resource.data.status == 'rejeitada'));
 

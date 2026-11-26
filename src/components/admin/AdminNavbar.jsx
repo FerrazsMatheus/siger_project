@@ -60,10 +60,7 @@ export default function AdminNavbar() {
           </div>
         </div>
       </nav>
-      <div
-        id="admin-mobile-navigation"
-        className={`container app-shell admin-navigation-shell ${menuMobileAberto ? 'is-open' : ''}`}
-      >
+      <div className="container app-shell admin-desktop-navigation">
         <div className="card shell-card mb-4 admin-navigation-card">
           <nav className="tab-nav admin-tabs" aria-label="Navegação do admin">
             {abasAdmin.map(({ to, label, end }) => (
@@ -71,7 +68,6 @@ export default function AdminNavbar() {
                 key={to}
                 end={end}
                 to={to}
-                onClick={() => setMenuMobileAberto(false)}
                 className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
               >
                 {label}
@@ -80,6 +76,24 @@ export default function AdminNavbar() {
           </nav>
         </div>
       </div>
+      <aside
+        id="admin-mobile-navigation"
+        className={`dashboard-sidebar admin-navigation-shell ${menuMobileAberto ? 'is-open' : ''}`}
+      >
+        <nav className="sidebar-nav" aria-label="Navegação do admin">
+          {abasAdmin.map(({ to, label, end }) => (
+            <NavLink
+              key={to}
+              end={end}
+              to={to}
+              onClick={() => setMenuMobileAberto(false)}
+              className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}${to === '/admin/locais' ? ' admin-locations-tab' : ''}`}
+            >
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
     </>
   )
 }

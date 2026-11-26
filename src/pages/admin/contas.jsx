@@ -206,14 +206,18 @@ const Contas = memo(function Contas() {
 
   const confirmarExclusaoConta = async (conta) => {
     const nomeConta = conta.nome || 'esta conta'
-    const confirmar = window.confirm(`Deseja realmente excluir ${nomeConta}?`)
+    const confirmar = window.confirm(
+      `Deseja realmente excluir ${nomeConta}? O perfil e a autorização serão removidos do SIGER. A credencial do Firebase Authentication permanece porque a exclusão direta exige um backend privilegiado.`,
+    )
     if (!confirmar) {
       return
     }
 
     try {
       await removerContaVerificada(conta.id)
-      setSucessoImportacao(`Conta de ${nomeConta} removida com sucesso.`)
+      setSucessoImportacao(conta.authUid
+        ? `Perfil e autorização de ${nomeConta} removidos do SIGER. A credencial de autenticação permanece no Firebase, mas não terá perfil para acessar o sistema.`
+        : `Autorização de ${nomeConta} removida com sucesso.`)
       setErroImportacao('')
       await carregarDados()
     } catch (error) {
@@ -283,7 +287,7 @@ const Contas = memo(function Contas() {
       await carregarDados()
     } catch (error) {
       console.error('Erro ao atualizar conta verificada:', error)
-      setErroEdicao('Não foi possível atualizar a conta selecionada.')
+      setErroEdicao(error.message || 'Não foi possível atualizar a conta selecionada.')
     } finally {
       setSalvandoEdicao(false)
     }
@@ -307,8 +311,8 @@ const Contas = memo(function Contas() {
             </div>
           </div>
 
-          <div className="row g-3 mb-4">
-            <div className="col-md-6 col-xl-3">
+          <div className="row g-3 mb-4 verified-account-summary">
+            <div className="col-6 col-md-6 col-xl-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="text-muted small text-uppercase">Total</div>
@@ -316,7 +320,7 @@ const Contas = memo(function Contas() {
                 </div>
               </div>
             </div>
-            <div className="col-md-6 col-xl-3">
+            <div className="col-6 col-md-6 col-xl-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="text-muted small text-uppercase">Alunos</div>
@@ -324,7 +328,7 @@ const Contas = memo(function Contas() {
                 </div>
               </div>
             </div>
-            <div className="col-md-6 col-xl-3">
+            <div className="col-6 col-md-6 col-xl-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="text-muted small text-uppercase">Professores</div>
@@ -332,7 +336,7 @@ const Contas = memo(function Contas() {
                 </div>
               </div>
             </div>
-            <div className="col-md-6 col-xl-3">
+            <div className="col-6 col-md-6 col-xl-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="text-muted small text-uppercase">Status</div>
@@ -582,9 +586,11 @@ const Contas = memo(function Contas() {
                           </td>
                           <td className="text-center">
                             <div className="d-flex justify-content-center gap-2">
-                              <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEdicaoConta(conta)}>
-                                Editar
-                              </button>
+                              {conta.status === 'nao_cadastrada' && (
+                                <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEdicaoConta(conta)}>
+                                  Editar
+                                </button>
+                              )}
                               <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => confirmarExclusaoConta(conta)}>
                                 Excluir
                               </button>
@@ -631,7 +637,7 @@ const Contas = memo(function Contas() {
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label">E-mail institucional</label>
+                      <label className="form-label">E-mail</label>
                       <input
                         type="email"
                         className="form-control"

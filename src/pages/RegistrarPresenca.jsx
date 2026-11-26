@@ -29,7 +29,6 @@ export default function RegistrarPresenca() {
   const [mensagem, setMensagem] = useState('')
   const [erro, setErro] = useState('')
   const [erroCamera, setErroCamera] = useState('')
-  const scannerRef = useRef(null)
   const detectadoRef = useRef(false)
 
   const carregarHistorico = useCallback(async () => {
@@ -52,21 +51,20 @@ export default function RegistrarPresenca() {
   useEffect(() => {
     if (!lendo) return undefined
     let cancelado = false
+    let scannerIniciado = false
     const scanner = new Html5Qrcode('presenca-camera', {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
       verbose: false,
     })
-    scannerRef.current = scanner
     detectadoRef.current = false
-    scanner.start(
+    const inicializacao = scanner.start(
       { facingMode: 'environment' },
       {
         fps: 10,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.82)
+          const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72)
           return { width: size, height: size }
         },
-        aspectRatio: 4 / 3,
       },
       (texto) => {
         if (detectadoRef.current) return
@@ -76,17 +74,24 @@ export default function RegistrarPresenca() {
         setLendo(false)
       },
       () => {},
-    ).catch((error) => {
-      if (!cancelado) {
-        console.error('Não foi possível iniciar a câmera:', error)
-        setErroCamera('Não foi possível acessar a câmera. Permita o uso nas configurações do navegador e acesse o sistema por HTTPS; alternativamente, digite o código do QR abaixo.')
-        setLendo(false)
-      }
+    ).then(() => {
+      scannerIniciado = true
+    }).catch((error) => {
+      if (cancelado) return
+      console.error('Não foi possível iniciar a câmera:', error)
+      setErroCamera('Não foi possível acessar a câmera. Permita o uso nas configurações do navegador e acesse o sistema por HTTPS; alternativamente, digite o código do QR abaixo.')
+      setLendo(false)
     })
+
     return () => {
       cancelado = true
-      if (scanner.isScanning) scanner.stop().catch(() => {})
-      scannerRef.current = null
+      void inicializacao.then(async () => {
+        if (!scannerIniciado) return
+        if (scanner.isScanning) await scanner.stop()
+        scanner.clear()
+      }).catch((error) => {
+        console.error('Não foi possível encerrar a câmera:', error)
+      })
     }
   }, [lendo])
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
-import { cadastrarUsuario, emailInstitucionalValido, traduzirErroFirebase } from '../services/authService'
+import { cadastrarUsuario, traduzirErroFirebase } from '../services/authService'
 import { finalizarCadastroVerificado, validarCadastroVerificado } from '../services/verifiedAccountService'
 import { criarDocumentoUsuario } from '../services/userService'
 
@@ -41,10 +41,6 @@ export default function Cadastro() {
     const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
     if (!emailValido) {
       return 'Informe um e-mail em formato válido.'
-    }
-
-    if (!emailInstitucionalValido(email)) {
-      return 'O cadastro é permitido somente com e-mail institucional (@ifsul.edu.br).'
     }
 
     if (senha.length < 6) {
@@ -119,7 +115,7 @@ export default function Cadastro() {
       <div className="card shadow-sm" style={{ width: '100%', maxWidth: 420 }}>
         <div className="card-body p-4">
           <h1 className="h4 text-center mb-1">Criar conta</h1>
-          <p className="text-center text-muted mb-4">Use seu e-mail institucional @ifsul.edu.br</p>
+          <p className="text-center text-muted mb-4">Use o e-mail informado no seu cadastro pré-verificado</p>
 
           {erro && (
             <div className="alert alert-danger py-2" role="alert">
@@ -150,13 +146,13 @@ export default function Cadastro() {
 
             <div className="mb-3">
               <label htmlFor="email" className="form-label">
-                E-mail institucional
+                E-mail
               </label>
               <input
                 id="email"
                 type="email"
                 className="form-control"
-                placeholder="nome@ifsul.edu.br"
+                placeholder="nome@exemplo.com"
                 value={form.email}
                 onChange={handleChange('email')}
                 autoComplete="email"

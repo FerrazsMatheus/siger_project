@@ -6,12 +6,6 @@ import {
 } from 'firebase/auth'
 import { auth } from './firebase'
 
-const DOMINIO_PERMITIDO = '@ifsul.edu.br'
-
-export function emailInstitucionalValido(email) {
-  return typeof email === 'string' && email.toLowerCase().trim().endsWith(DOMINIO_PERMITIDO)
-}
-
 // Traduz os códigos de erro do Firebase em mensagens amigáveis em português
 export function traduzirErroFirebase(error) {
   const codigo = error?.code || ''

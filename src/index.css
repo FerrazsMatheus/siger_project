@@ -244,6 +244,15 @@ h6 {
   object-fit: cover;
 }
 
+.attendance-camera-frame #presenca-camera {
+  position: absolute;
+  inset: 0;
+}
+
+.attendance-camera-frame #presenca-camera video {
+  display: block;
+}
+
 .attendance-camera-frame #presenca-camera__scan_region {
   display: grid;
   width: 100% !important;
@@ -365,11 +374,21 @@ h6 {
 @media (max-width: 767.98px) {
   .attendance-scanner-section {
     grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+
+  .attendance-scanner-copy {
+    width: 100%;
   }
 
   .attendance-camera-frame {
-    width: 100%;
+    width: min(100%, 480px);
     min-height: 0;
+    max-height: min(58dvh, 480px);
+    aspect-ratio: 1;
+    margin-inline: auto;
+    border-radius: 1rem;
   }
 
   .qr-code-row {
@@ -1585,6 +1604,74 @@ h6 {
   margin-top: 0.5rem;
 }
 
+.admin-navigation-shell {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-desktop-navigation {
+    display: none;
+  }
+
+  .admin-request-page {
+    min-width: 0;
+  }
+
+  .admin-request-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .admin-request-tabs .tab-button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem 0.55rem;
+    text-align: center;
+  }
+
+  .admin-request-page .status-filter-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .admin-request-page .status-filter-btn {
+    min-width: 0;
+    padding: 0.6rem 0.5rem;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-request-item {
+    padding: 0.9rem;
+  }
+
+  .admin-request-item .request-main {
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-request-item .request-title-row {
+    align-items: flex-start;
+  }
+
+  .admin-request-item .request-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .admin-request-item .request-actions .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 0.55rem 0.4rem;
+    font-size: 0.82rem;
+    white-space: normal;
+  }
+}
+
 .status-filter-list {
   display: flex;
   flex-wrap: wrap;
@@ -1841,6 +1928,36 @@ h6 {
     --mobile-topbar-height: 102px;
   }
 
+  .notification-panel {
+    position: fixed;
+    top: calc(var(--mobile-topbar-height) + 0.5rem);
+    right: 1rem;
+    left: 1rem;
+    display: flex;
+    width: auto;
+    max-height: calc(100vh - var(--mobile-topbar-height) - 1.5rem);
+    max-height: calc(100dvh - var(--mobile-topbar-height) - 1.5rem);
+    flex-direction: column;
+    border-radius: 0.9rem;
+  }
+
+  .notification-panel-header {
+    flex: 0 0 auto;
+  }
+
+  .notification-list {
+    min-height: 0;
+    max-height: none;
+    flex: 1 1 auto;
+    overscroll-behavior: contain;
+  }
+
+  .notification-item {
+    grid-template-columns: 2.8rem minmax(0, 1fr);
+    gap: 0.35rem 0.55rem;
+    padding: 0.75rem 0.85rem;
+  }
+
   .dashboard-layout {
     grid-template-columns: 1fr;
     padding-bottom: 0;
@@ -1899,47 +2016,20 @@ h6 {
     display: none;
   }
 
-  .container.admin-navigation-shell {
+  .admin-navigation-shell {
     display: none;
-    position: fixed;
-    z-index: 1041;
-    top: var(--mobile-topbar-height);
-    right: 0;
-    left: 0;
-    width: min(calc(100% - 2rem), 720px);
-    max-height: calc(100vh - var(--mobile-topbar-height) - 1rem);
-    max-height: calc(100dvh - var(--mobile-topbar-height) - 1rem);
-    margin: 0 auto;
-    padding: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .admin-navigation-shell.is-open {
     display: block;
   }
 
-  .admin-navigation-card {
-    margin: 0 !important;
-    overflow: hidden;
-    border-radius: 0.9rem;
-    box-shadow: 0 12px 24px rgba(11, 78, 74, 0.12);
+  .dashboard-sidebar.admin-navigation-shell {
+    width: auto;
   }
 
-  .admin-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.35rem;
-    padding: 0.75rem;
-  }
-
-  .admin-tabs .tab-button {
-    width: 100%;
-    min-height: 48px;
-    padding: 0.55rem 0.65rem;
-    border-radius: 0.7rem;
-    font-size: 0.78rem;
-    white-space: normal;
+  .admin-navigation-shell .admin-locations-tab {
+    display: none;
   }
 
   .app-shell {
@@ -2351,6 +2441,25 @@ h6 {
 }
 
 @media (max-width: 576px) {
+  .verified-account-summary {
+    --bs-gutter-x: 0.65rem;
+    --bs-gutter-y: 0.65rem;
+  }
+
+  .verified-account-summary .card-body {
+    padding: 0.85rem;
+  }
+
+  .verified-account-summary .display-6 {
+    margin-top: 0.35rem !important;
+    font-size: 1.8rem;
+    line-height: 1.1;
+  }
+
+  .verified-account-summary .small {
+    overflow-wrap: anywhere;
+  }
+
   .local-form-dialog {
     width: calc(100% - 1rem);
     height: calc(100vh - 1rem);

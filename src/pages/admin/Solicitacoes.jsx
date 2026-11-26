@@ -11,6 +11,7 @@ import {
   STATUS_SOLICITACAO_LABELS,
   STATUS_SOLICITACAO_CORES,
 } from '../../services/solicitacaoService'
+import { enviarEmailDecisao } from '../../services/emailService'
 
 const BADGE_TIPO_USUARIO = {
   aluno: 'bg-primary',
@@ -255,9 +256,31 @@ const Solicitacoes = memo(function Solicitacoes() {
         status: novoStatus,
         observacaoAdmin: observacao,
       })
+      let falhaEmail = false
+      try {
+        await enviarEmailDecisao({
+          destinatario: modalProcessar.usuarioEmail,
+          nome: modalProcessar.usuarioNome,
+          tipo: 'reserva de lugar',
+          status: novoStatus,
+          detalhes: {
+            assunto: modalProcessar.localNome,
+            localNome: modalProcessar.localNome,
+            data: modalProcessar.dataReserva,
+            horarioInicio: modalProcessar.horarioInicio,
+            horarioFim: modalProcessar.horarioFim,
+            proposito: modalProcessar.proposito,
+            observacao: observacao.trim(),
+          },
+        })
+      } catch (emailError) {
+        falhaEmail = true
+        console.error('A solicitação foi processada, mas o e-mail não foi enviado:', emailError)
+      }
       fecharModal()
       await carregarSolicitacoes()
       await carregarContadores()
+      if (falhaEmail) setErro('A decisão foi salva, mas não foi possível enviar o e-mail. Verifique as configurações do EmailJS.')
     } catch (error) {
       console.error('Erro ao processar solicitação:', error)
       setErroProcessamento('Não foi possível processar a solicitação. Tente novamente.')
@@ -306,7 +329,7 @@ const Solicitacoes = memo(function Solicitacoes() {
     <>
       <AdminNavbar />
 
-      <div className="container app-shell">
+      <div className="container app-shell admin-request-page">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
           <div>
             <span className="eyebrow">Reservas</span>

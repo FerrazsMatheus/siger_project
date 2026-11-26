@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from '../services/firebase'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { auth, db } from '../services/firebase'
 import { buscarDocumentoUsuario } from '../services/userService'
 import { finalizarCadastroVerificado } from '../services/verifiedAccountService'
 import { AuthContext } from './authContextValue'
@@ -39,13 +40,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let geracaoPerfil = 0
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribePerfil = null
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       const geracaoAtual = ++geracaoPerfil
+      unsubscribePerfil?.()
+      unsubscribePerfil = null
       setUsuarioAtual(user)
       setCarregando(true)
 
       if (user) {
         await carregarPerfilUsuario(user.uid)
+        if (geracaoAtual === geracaoPerfil) {
+          unsubscribePerfil = onSnapshot(
+            doc(db, 'users', user.uid),
+            (snapshot) => setPerfilUsuario(snapshot.exists() ? snapshot.data() : null),
+            (error) => console.error('Erro ao observar o perfil do usuário:', error),
+          )
+        }
       } else {
         setPerfilUsuario(null)
       }
@@ -57,7 +68,8 @@ export function AuthProvider({ children }) {
 
     return () => {
       geracaoPerfil += 1
-      unsubscribe()
+      unsubscribePerfil?.()
+      unsubscribeAuth()
     }
   }, [carregarPerfilUsuario])
 

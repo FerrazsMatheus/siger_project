@@ -16,7 +16,7 @@ function formatarDataIso(data) {
 
 function Calendario({ reservas = [], editavel = false, usuarioId = '', role = '', turmaId = '' }) {
   const [mesAtual, setMesAtual] = useState(() => new Date())
-  const [diaSelecionado, setDiaSelecionado] = useState(() => new Date())
+  const [diaSelecionado, setDiaSelecionado] = useState(null)
   const [eventos, setEventos] = useState([])
   const [aulasExtras, setAulasExtras] = useState([])
   const [novoEvento, setNovoEvento] = useState({ titulo: '', tipo: 'Evento', descricao: '' })
@@ -115,8 +115,8 @@ function Calendario({ reservas = [], editavel = false, usuarioId = '', role = ''
     }, {})
   }, [compromissos])
 
-  const diaSelecionadoIso = formatarDataIso(diaSelecionado)
-  const compromissosSelecionados = compromissosPorDia[diaSelecionadoIso] || []
+  const diaSelecionadoIso = diaSelecionado ? formatarDataIso(diaSelecionado) : ''
+  const compromissosSelecionados = diaSelecionadoIso ? compromissosPorDia[diaSelecionadoIso] || [] : []
 
   useLayoutEffect(() => {
     if (!eventosDiaAberto) return undefined
@@ -198,10 +198,22 @@ function Calendario({ reservas = [], editavel = false, usuarioId = '', role = ''
     }
   }
 
+  function fecharDiaSelecionado() {
+    setDiaSelecionado(null)
+    setEventosDiaAberto(false)
+    setFormularioEventoAberto(false)
+    setPosicaoPopover(null)
+  }
+
   function selecionarDia(dia) {
     const mesmoDia = formatarDataIso(dia) === diaSelecionadoIso
+    if (mesmoDia) {
+      fecharDiaSelecionado()
+      return
+    }
+
     setDiaSelecionado(dia)
-    setEventosDiaAberto((aberto) => !mesmoDia || !aberto)
+    setEventosDiaAberto(true)
     setFormularioEventoAberto(false)
     setPosicaoPopover(null)
     setNovoEvento((atual) => ({ ...atual, titulo: '', descricao: '' }))
@@ -314,7 +326,7 @@ function Calendario({ reservas = [], editavel = false, usuarioId = '', role = ''
               type="button"
               className="calendar-day-popover-close"
               aria-label="Fechar compromissos do dia"
-              onClick={() => setEventosDiaAberto(false)}
+              onClick={fecharDiaSelecionado}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="m6 6 12 12M18 6 6 18" />
