@@ -133,6 +133,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /users/{uid}/notificacoesLidas/{notificacaoId} {
+      allow read: if ehDonoDoDocumento(uid);
+      allow create, update: if ehDonoDoDocumento(uid) &&
+        request.resource.data.notificacaoId == notificacaoId &&
+        request.resource.data.visualizadaEm == request.time &&
+        request.resource.data.keys().hasOnly(['notificacaoId', 'visualizadaEm']);
+      allow delete: if false;
+    }
+
     // Locais físicos do campus (laboratórios, salas de aula, salas
     // administrativas, auditórios etc.). Leitura liberada a qualquer usuário
     // autenticado; escrita restrita a administradores.

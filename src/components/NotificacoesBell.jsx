@@ -9,6 +9,7 @@ import {
   observarAulasExtrasDoAluno,
 } from '../services/aulaExtraService'
 import { observarPresencasAluno } from '../services/presencaService'
+import { marcarNotificacoesComoLidas, observarNotificacoesLidas } from '../services/notificacaoService'
 
 function diferencaEmDias(dataIso, hoje) {
   const [ano, mes, dia] = dataIso.split('-').map(Number)
@@ -40,9 +41,20 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
   const [aulasInscritas, setAulasInscritas] = useState([])
   const [presencas, setPresencas] = useState([])
   const [aprovacoesAulas, setAprovacoesAulas] = useState([])
+  const [notificacoesLidas, setNotificacoesLidas] = useState(() => new Set())
   const [aberto, setAberto] = useState(false)
   const [hoje, setHoje] = useState(() => new Date())
   const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
+
+  useEffect(() => {
+    setNotificacoesLidas(new Set())
+    if (!usuarioId) return undefined
+    return observarNotificacoesLidas(
+      usuarioId,
+      setNotificacoesLidas,
+      (error) => console.error('Erro ao acompanhar notificações visualizadas:', error),
+    )
+  }, [usuarioId])
 
   useEffect(() => {
     let ativo = true
@@ -196,6 +208,25 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
     return [...ausenciasReservas, ...ausenciasAulas, ...notificacoesAulas, ...notificacoesAprovacoes, ...compromissosProximos]
   }, [aulasExtras, aulasInscritas, aprovacoesAulas, eventos, hoje, presencas, reservas, role])
 
+  const notificacoesNovas = notificacoes.filter((notificacao) => !notificacoesLidas.has(notificacao.id))
+
+  function alternarPainelNotificacoes() {
+    const vaiAbrir = !aberto
+    setAberto(vaiAbrir)
+    if (!vaiAbrir || notificacoesNovas.length === 0) return
+
+    const novasIds = notificacoesNovas.map((notificacao) => notificacao.id)
+    setNotificacoesLidas((atuais) => new Set([...atuais, ...novasIds]))
+    marcarNotificacoesComoLidas(usuarioId, notificacoesNovas).catch((error) => {
+      console.error('Erro ao salvar notificações visualizadas:', error)
+      setNotificacoesLidas((atuais) => {
+        const atualizadas = new Set(atuais)
+        novasIds.forEach((id) => atualizadas.delete(id))
+        return atualizadas
+      })
+    })
+  }
+
   async function abrirNotificacaoAula(aulaId) {
     try {
       await marcarAulaExtraComoLida({ uid: usuarioId, aulaId })
@@ -226,19 +257,19 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
     <div className="notification-area">
       <button
         type="button"
-        className={`notification-bell ${notificacoes.length ? 'has-notifications' : ''}`}
-        aria-label={`Notificações${notificacoes.length ? `, ${notificacoes.length} avisos e compromissos` : ''}`}
+        className={`notification-bell ${notificacoesNovas.length ? 'has-notifications' : ''}`}
+        aria-label={`Notificações${notificacoesNovas.length ? `, ${notificacoesNovas.length} novas` : ''}`}
         aria-expanded={aberto}
         aria-controls="notificacoes-proximas"
         title="Notificações de aulas extras, eventos e reservas"
-        onClick={() => setAberto((valor) => !valor)}
+        onClick={alternarPainelNotificacoes}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
         </svg>
-        {notificacoes.length > 0 && (
+        {notificacoesNovas.length > 0 && (
           <span className="notification-count" aria-hidden="true">
-            {notificacoes.length > 9 ? '9+' : notificacoes.length}
+            {notificacoesNovas.length > 9 ? '9+' : notificacoesNovas.length}
           </span>
         )}
       </button>
@@ -247,7 +278,7 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
         <div id="notificacoes-proximas" className="notification-panel" aria-label="Próximos compromissos">
           <div className="notification-panel-header">
             <strong>Notificações e compromissos</strong>
-            <span>{notificacoes.length}</span>
+            <span>{notificacoesNovas.length} novas</span>
           </div>
           {notificacoes.length ? (
             <ul className="notification-list">
@@ -266,7 +297,11 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
                         <strong>{notificacao.titulo}</strong>
                         <span>{notificacao.tipo}{notificacao.detalhe ? ` · ${notificacao.detalhe}` : ''}</span>
                       </span>
-                      <span className="notification-item-time">{notificacao.aprovacaoAulaExtra ? 'Aprovada' : 'Nova'}</span>
+                      <span className="notification-item-time">
+                        {notificacoesLidas.has(notificacao.id)
+                          ? 'Visualizada'
+                          : notificacao.aprovacaoAulaExtra ? 'Aprovada' : 'Nova'}
+                      </span>
                     </Link>
                   ) : (
                     <div className="notification-item">

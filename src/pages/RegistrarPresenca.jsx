@@ -42,7 +42,10 @@ export default function RegistrarPresenca() {
       .then((dados) => { if (ativo) setHistorico(dados || []) })
       .catch((error) => {
         console.error('Erro ao carregar histórico de presenças:', error)
-        if (ativo) setErro('Não foi possível carregar seu histórico de presenças.')
+        if (ativo) {
+          const detalheErro = error?.message || error?.code
+          setErro(`Não foi possível carregar seu histórico de presenças.${detalheErro ? ` Detalhe: ${detalheErro}` : ''}`)
+        }
       })
       .finally(() => { if (ativo) setHistoricoCarregando(false) })
     return () => { ativo = false }
