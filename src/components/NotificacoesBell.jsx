@@ -26,6 +26,19 @@ function formatarData(dataIso) {
   })
 }
 
+function notificacaoDentroDaRetencao(notificacao, agora) {
+  if (!notificacao.data) return true
+  const dataIso = String(notificacao.data).slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataIso)) return true
+  const partes = dataIso.split('-').map(Number)
+  const [ano, mes, dia] = partes
+  const fimDoDia = new Date(ano, mes - 1, dia, 23, 59, 59, 999).getTime()
+  const dataValida = new Date(ano, mes - 1, dia)
+  if (Number.isNaN(fimDoDia) || dataValida.getFullYear() !== ano || dataValida.getMonth() !== mes - 1 || dataValida.getDate() !== dia) return true
+  const cincoDias = 5 * 24 * 60 * 60 * 1000
+  return agora <= fimDoDia + cincoDias
+}
+
 function horarioFimCompromisso(dataIso, horario, duracaoMinutos = 0) {
   if (!dataIso) return null
   const horarioEncontrado = String(horario || '').match(/(?:^|\D)([01]?\d|2[0-3]):([0-5]\d)/)
@@ -206,6 +219,7 @@ function NotificacoesBell({ reservas = [], usuarioId = '', role = '', turmaId = 
       }))
 
     return [...ausenciasReservas, ...ausenciasAulas, ...notificacoesAulas, ...notificacoesAprovacoes, ...compromissosProximos]
+      .filter((notificacao) => notificacaoDentroDaRetencao(notificacao, hoje.getTime()))
   }, [aulasExtras, aulasInscritas, aprovacoesAulas, eventos, hoje, presencas, reservas, role])
 
   const notificacoesNovas = notificacoes.filter((notificacao) => !notificacoesLidas.has(notificacao.id))
